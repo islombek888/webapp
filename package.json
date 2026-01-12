@@ -10,17 +10,21 @@
     "preview": "vite preview --host 0.0.0.0 --port 3000",
     "start": "vite preview --host 0.0.0.0 --port 3000",
     "server": "ts-node server/index.ts",
-    "server:dev": "nodemon --exec ts-node server/index.ts"
+    "server:dev": "nodemon --exec ts-node server/index.ts",
+    "test": "jest",
+    "deploy": "npm run build && npm run server"
   },
   "dependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/node-telegram-bot-api": "^0.64.13",
     "axios": "^1.13.2",
     "cors": "^2.8.5",
     "express": "^5.2.1",
     "framer-motion": "^12.25.0",
     "lightweight-charts": "^5.1.0",
     "lucide-react": "^0.562.0",
+    "node-telegram-bot-api": "^0.67.0",
     "nodemon": "^3.1.11",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

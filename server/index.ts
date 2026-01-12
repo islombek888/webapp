@@ -1,8 +1,11 @@
-import express, { Request, Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import TelegramBotService from './telegramBot.ts';
+import TelegramBot from 'node-telegram-bot-api';
+import axios from 'axios';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -10,10 +13,68 @@ const __dirname = dirname(__filename);
 const app = express();
 const server = createServer(app);
 
+// Initialize Telegram Bot
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const WEB_APP_URL = process.env.WEB_APP_URL || `http://localhost:${process.env.PORT || 3000}`;
+let telegramBot: TelegramBot | null = null;
+let telegramService: TelegramBotService | null = null;
+
+if (BOT_TOKEN && BOT_TOKEN !== 'YOUR_BOT_TOKEN') {
+  try {
+    telegramBot = new TelegramBot(BOT_TOKEN, { polling: true });
+    telegramService = new TelegramBotService();
+    console.log('🤖 Telegram bot initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize Telegram bot:', error);
+  }
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static(join(__dirname, '../dist')));
+
+// Telegram Bot WebApp
+app.post('/api/telegram/webhook', (req: Request, res: Response) => {
+  const { message, callback_query } = req.body;
+  
+  if (message?.text === '/start' && telegramService) {
+    telegramService.sendWelcomeMessage(message.chat.id);
+    res.json({ ok: true });
+  } else if (callback_query && telegramService) {
+    telegramService.handleCallbackQuery(callback_query.message.chat.id, callback_query.data);
+    res.json({ ok: true });
+  } else {
+    res.json({ ok: true });
+  }
+});
+
+// Manual bot command handler (if polling is enabled)
+if (telegramBot) {
+  telegramBot.onText(/\/start/, (msg) => {
+    if (telegramService) {
+      telegramService.sendWelcomeMessage(msg.chat.id);
+    }
+  });
+
+  telegramBot.onText(/\/help/, (msg) => {
+    if (telegramService) {
+      telegramService.sendHelpMessage(msg.chat.id);
+    }
+  });
+
+  telegramBot.onText(/\/market/, (msg) => {
+    if (telegramService) {
+      telegramService.sendMarketStatus(msg.chat.id);
+    }
+  });
+
+  telegramBot.on('callback_query', (callbackQuery) => {
+    if (telegramService && callbackQuery.message) {
+      telegramService.handleCallbackQuery(callbackQuery.message.chat.id, callbackQuery.data || '');
+    }
+  });
+}
 
 // API Routes
 app.get('/api/health', (req: Request, res: Response) => {
@@ -97,7 +158,7 @@ app.post('/api/ai/predict', (req: Request, res: Response) => {
 });
 
 // Serve frontend for all other routes
-app.get('*', (req: Request, res: Response) => {
+app.use((req: Request, res: Response) => {
   res.sendFile(join(__dirname, '../dist/index.html'));
 });
 
@@ -107,6 +168,11 @@ server.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
   console.log(`📊 API available at http://0.0.0.0:${PORT}/api`);
   console.log(`🌐 Frontend served at http://0.0.0.0:${PORT}`);
+  console.log(`🤖 Telegram webhook: http://0.0.0.0:${PORT}/api/telegram/webhook`);
+  console.log(`\n📱 To set up Telegram bot:`);
+  console.log(`1. Create bot with @BotFather`);
+  console.log(`2. Set webhook to: https://your-app.onrender.com/api/telegram/webhook`);
+  console.log(`3. Users send /start to open trading terminal`);
 });
 
 export default app;
