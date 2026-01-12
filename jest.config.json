@@ -1,0 +1,1 @@
+{\n  \"preset\": \"ts-jest\",\n  \"testEnvironment\": \"node\",\n  \"roots\": [\"<rootDir>/tests\"],\n  \"testMatch\": [\"**/__tests__/**/*.ts\", \"**/?(*.)+(spec|test).ts\"],\n  \"transform\": {\n    \"^.+\\\\.ts$\": \"ts-jest\"\n  },\n  \"collectCoverageFrom\": [\"server/**/*.ts\", \"!server/**/*.d.ts\"]\n}
